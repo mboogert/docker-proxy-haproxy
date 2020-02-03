@@ -1,0 +1,29 @@
+version: '3.7'
+
+services:
+
+  proxy-haproxy:
+    image: haproxy:2.1
+    ports:
+      - "80:80"
+      - "443:443"
+    network_mode: host
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+      - ./haproxy/dhparam.pem:/usr/local/etc/haproxy/dhparam.pem
+      - ./haproxy/ssl:/ssl
+
+  proxy-nginx:
+    image: nginx:1.17
+    ports:
+      - "127.0.0.1:8888:80"
+    volumes:
+      - ./nginx/www_root:/usr/share/nginx/html
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - ./certbot:/etc/letsencrypt
+      - ./nginx/www_root:/usr/share/nginx/html
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
